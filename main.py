@@ -162,7 +162,10 @@ async def run_checks_for_all_users(context: ContextTypes.DEFAULT_TYPE):
 
 async def get_price_from_request(response):
     tree = html.fromstring(response.content)
-    return int(re.sub(r'\D', '', tree.xpath("//strong[contains(text(), 'Hinta')]/following-sibling::text()")[0]))
+    data = tree.xpath("//strong[contains(text(), 'Price') or contains(text(), 'Hinta')]/following-sibling::text()")
+    raw = data[0] if len(data) else '0'
+    value = re.sub(r'\D', '', raw)
+    return int(value) if value else 0
 
 
 async def get_text_from_request(response):
