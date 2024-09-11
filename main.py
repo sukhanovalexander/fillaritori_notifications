@@ -191,7 +191,7 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             logger.info(f"Checking {num + 1} listing price")
             price = await get_price_from_request(listing_response)
             listing_content = await get_text_from_request(listing_response)
-        if keyword.lower() in listing_content.lower() and (price < max_price or max_price == 0):
+        if keyword.lower() in listing_content.lower() and (price <= max_price or max_price == 0):
             await bot.send_message(chat_id=chat_id, text=listing_url)
 
 
