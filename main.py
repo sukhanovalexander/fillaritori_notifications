@@ -168,6 +168,13 @@ async def get_price_from_request(response):
     return int(value) if value else 0
 
 
+async def is_listing_for_sale(response):
+    tree = html.fromstring(response.content)
+    data = tree.xpath("//h1[@class='ipsType_pageTitle ipsContained_container']/span/a/span")
+    raw = data[0].text if len(data) else ''
+    return raw == 'Myydään'
+
+
 async def get_text_from_request(response):
     tree = html.fromstring(response.content)
     listing_text_fields = tree.xpath("//div[@data-role='commentContent'][1]//text()")
@@ -190,7 +197,7 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
         listing_url = tree.xpath(f'//div[@data-tableid="topics"]/ol/li[{num + 1}]/div[@class="ipsDataItem_main"]/h4'
                                  f'/span[2]/a/@href')[0]
         listing_response = requests.get(listing_url)
-        if listing_response.status_code == 200:
+        if listing_response.status_code == 200 and await is_listing_for_sale(listing_response):
             logger.info(f"Checking {num + 1} listing price")
             price = await get_price_from_request(listing_response)
             listing_content = await get_text_from_request(listing_response)
