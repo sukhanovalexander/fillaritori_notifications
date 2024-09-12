@@ -146,7 +146,7 @@ async def delete_search_command(update: Update, context):
 def get_last_match(url):
     response = requests.get(url)
     tree = html.fromstring(response.content)
-    item = tree.xpath('//div[@data-tableid="topics"]/ol/li[2]/div[@class="ipsDataItem_main"]/h4/span[2]/a/span')[0]
+    item = tree.xpath('//div[@data-tableid="topics"]/ol/li[20]/div[@class="ipsDataItem_main"]/h4/span[2]/a/span')[0]
     return item.text.strip()
 
 
@@ -196,6 +196,8 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             listing_content = await get_text_from_request(listing_response)
         if keyword.lower() in listing_content.lower() and (price <= max_price or max_price == 0):
             await bot.send_message(chat_id=chat_id, text=listing_url)
+    else:
+        update_search(search_id, first_listing)
 
 
 def main() -> None:
