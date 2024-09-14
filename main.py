@@ -41,6 +41,8 @@ TOKEN = "7194463974:AAFHsByUOUbMaKGGMgy15trdspR0KPY9qsg"
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
     chat_id = update.effective_chat.id
@@ -146,8 +148,12 @@ async def delete_search_command(update: Update, context):
 def get_last_match(url):
     response = requests.get(url)
     tree = html.fromstring(response.content)
-    item = tree.xpath('//div[@data-tableid="topics"]/ol/li[20]/div[@class="ipsDataItem_main"]/h4/span[2]/a/span')[0]
-    return item.text.strip()
+    item = tree.xpath('//div[@data-tableid="topics"]/ol/li[20]/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')[0]
+    return get_id_from_url(item)
+
+
+def get_id_from_url(url):
+    return url.split('/')[-2].split('-')[0]
 
 
 async def run_checks_for_all_users(context: ContextTypes.DEFAULT_TYPE):
@@ -186,13 +192,14 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
     price = 0
     listing_content = ''
     tree = html.fromstring(response.content)
-    items = tree.xpath('//div[@data-tableid="topics"]/ol/li/div[@class="ipsDataItem_main"]/h4/span[2]/a/span')
-    first_listing = items[0].text.strip()
+    items = tree.xpath('//div[@data-tableid="topics"]/ol/li/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')
+
+    first_listing_id = get_id_from_url(items[0])
     for num, element in enumerate(items):
         logger.info(f"Checking {num+1} listing on page")
-        if element.text.strip() == last_match:
+        if get_id_from_url(element) == last_match:
             logger.info("Met last known listing")
-            update_search(search_id, first_listing)
+            update_search(search_id, first_listing_id)
             break
         listing_url = tree.xpath(f'//div[@data-tableid="topics"]/ol/li[{num + 1}]/div[@class="ipsDataItem_main"]/h4'
                                  f'/span[2]/a/@href')[0]
@@ -204,7 +211,7 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
         if keyword.lower() in listing_content.lower() and (price <= max_price or max_price == 0):
             await bot.send_message(chat_id=chat_id, text=listing_url)
     else:
-        update_search(search_id, first_listing)
+        update_search(search_id, first_listing_id)
 
 
 def main() -> None:
