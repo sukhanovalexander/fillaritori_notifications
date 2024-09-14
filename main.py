@@ -184,7 +184,23 @@ async def is_listing_for_sale(response):
 async def get_text_from_request(response):
     tree = html.fromstring(response.content)
     listing_text_fields = tree.xpath("//div[@data-role='commentContent'][1]//text()")
-    return ' '.join([text.strip() for text in listing_text_fields if text.strip()])
+    with_geotag = ' '.join([text.strip() for text in listing_text_fields if text.strip()])
+    with_geotag.replace(" City: ", " Paikkakunta: ")
+    return with_geotag.split(" Paikkakunta: ")[0]
+
+
+def is_search_content_in_page_multiple_keywords(keyword, page_contents):
+    for word in keyword.split("-"):
+        if word.lower() not in page_contents.lower():
+            return False
+    else:
+        return True
+
+
+def is_search_content_in_page(keyword, page_contents):
+    if '-' in keyword:
+        return is_search_content_in_page_multiple_keywords(keyword, page_contents)
+    return keyword.lower() in page_contents.lower()
 
 
 async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_price, last_match):
@@ -208,7 +224,7 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             logger.info(f"Checking {num + 1} listing price")
             price = await get_price_from_request(listing_response)
             listing_content = await get_text_from_request(listing_response)
-        if keyword.lower() in listing_content.lower() and (price <= max_price or max_price == 0):
+        if is_search_content_in_page(keyword, listing_content) and (price <= max_price or max_price == 0):
             await bot.send_message(chat_id=chat_id, text=listing_url)
     else:
         update_search(search_id, first_listing_id)
