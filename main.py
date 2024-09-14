@@ -18,14 +18,16 @@ import asyncio
 import re
 import requests
 import sqlite3
-from db_handle import init_db, add_search, delete_search, list_searches, fetch_all_searches, update_search
+import pickle
+from db_handle import (init_db, add_search, delete_search, list_searches, fetch_all_searches, update_search,
+                       get_stored_request, create_stored_request, update_stored_request)
 from lxml import html
 from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler
 import schedule
 import time
 import logging
-from config import valid_url_list
+from config import valid_url_list, TOKEN
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
@@ -36,8 +38,6 @@ logging.basicConfig(
 # set higher logging level for httpx to avoid all GET and POST requests being logged
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
-
-TOKEN = "7194463974:AAFHsByUOUbMaKGGMgy15trdspR0KPY9qsg"
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.
@@ -148,7 +148,7 @@ async def delete_search_command(update: Update, context):
 def get_last_match(url):
     response = requests.get(url)
     tree = html.fromstring(response.content)
-    item = tree.xpath('//div[@data-tableid="topics"]/ol/li[20]/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')[0]
+    item = tree.xpath('//div[@data-tableid="topics"]/ol/li[5]/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')[0]
     return get_id_from_url(item)
 
 
@@ -203,8 +203,24 @@ def is_search_content_in_page(keyword, page_contents):
     return keyword.lower() in page_contents.lower()
 
 
+async def send_new_or_get_cached(url):
+    cached_request = get_stored_request(url)
+    if not cached_request:
+        response = requests.get(url)
+        serialized_data = pickle.dumps(response)
+        create_stored_request(url, serialized_data)
+        return response
+    storage_id, url, data, timestamp = cached_request[0]
+    if int(time.time()) - timestamp > 5 * 60:
+        response = requests.get(url)
+        serialized_data = pickle.dumps(response)
+        update_stored_request(storage_id, serialized_data)
+        return response
+    return pickle.loads(data)
+
+
 async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_price, last_match):
-    response = requests.get(f'{url}')
+    response = await send_new_or_get_cached(f'{url}')
     price = 0
     listing_content = ''
     tree = html.fromstring(response.content)
@@ -219,7 +235,7 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             break
         listing_url = tree.xpath(f'//div[@data-tableid="topics"]/ol/li[{num + 1}]/div[@class="ipsDataItem_main"]/h4'
                                  f'/span[2]/a/@href')[0]
-        listing_response = requests.get(listing_url)
+        listing_response = await send_new_or_get_cached(listing_url)
         if listing_response.status_code == 200 and await is_listing_for_sale(listing_response):
             logger.info(f"Checking {num + 1} listing price")
             price = await get_price_from_request(listing_response)
