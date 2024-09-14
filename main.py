@@ -162,7 +162,7 @@ async def run_checks_for_all_users(context: ContextTypes.DEFAULT_TYPE):
     bot = Bot(token=TOKEN)
     for search in searches:
         search_id, chat_id, url, keyword, max_price, last_match = search
-        logger.info(f"Checking {search_id} search for new ads")
+        logger.info(f"Checking {search_id} search for new ads on {url}")
         await check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_price, last_match)
 
 
@@ -206,16 +206,19 @@ def is_search_content_in_page(keyword, page_contents):
 async def send_new_or_get_cached(url):
     cached_request = get_stored_request(url)
     if not cached_request:
+        logger.info(f"Request to {url} was not cached")
         response = requests.get(url)
         serialized_data = pickle.dumps(response)
         create_stored_request(url, serialized_data)
         return response
     storage_id, url, data, timestamp = cached_request[0]
     if int(time.time()) - timestamp > 5 * 60:
+        logger.info(f"Updating request cache to {url}")
         response = requests.get(url)
         serialized_data = pickle.dumps(response)
         update_stored_request(storage_id, serialized_data)
         return response
+    logger.info(f"Getting {url} request from cache")
     return pickle.loads(data)
 
 
@@ -241,8 +244,10 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             price = await get_price_from_request(listing_response)
             listing_content = await get_text_from_request(listing_response)
         if is_search_content_in_page(keyword, listing_content) and (price <= max_price or max_price == 0):
+            logger.info(f"Sending message to {chat_id}")
             await bot.send_message(chat_id=chat_id, text=listing_url)
     else:
+        logger.info(f"Checked all listings on {url}, saving last ID to db")
         update_search(search_id, first_listing_id)
 
 
