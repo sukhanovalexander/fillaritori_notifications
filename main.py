@@ -166,6 +166,7 @@ async def run_checks_for_all_users(context: ContextTypes.DEFAULT_TYPE):
         await check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_price, last_match)
 
 
+
 async def get_price_from_request(response):
     tree = html.fromstring(response.content)
     data = tree.xpath("//strong[contains(text(), 'Price') or contains(text(), 'Hinta')]/following-sibling::text()")

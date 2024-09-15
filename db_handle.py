@@ -121,3 +121,14 @@ def update_stored_request(storage_id, data):
 
     conn.commit()
     conn.close()
+
+
+def delete_old_cache():
+    conn = sqlite3.connect('bot_data.db')
+    cursor = conn.cursor()
+    timestamp = int(time.time()) - 60 * 20
+    # Insert the search into the user_searches table
+    cursor.execute('''DELETE FROM requests_cache WHERE timestamp < ?''', (timestamp, ))
+
+    conn.commit()
+    conn.close()
