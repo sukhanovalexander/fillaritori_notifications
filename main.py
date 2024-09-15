@@ -20,7 +20,7 @@ import requests
 import sqlite3
 import pickle
 from db_handle import (init_db, add_search, delete_search, list_searches, fetch_all_searches, update_search,
-                       get_stored_request, create_stored_request, update_stored_request)
+                       get_stored_request, create_stored_request, update_stored_request, delete_old_cache)
 from lxml import html
 from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler
@@ -164,7 +164,7 @@ async def run_checks_for_all_users(context: ContextTypes.DEFAULT_TYPE):
         search_id, chat_id, url, keyword, max_price, last_match = search
         logger.info(f"Checking {search_id} search for new ads on {url}")
         await check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_price, last_match)
-
+    delete_old_cache()
 
 
 async def get_price_from_request(response):
