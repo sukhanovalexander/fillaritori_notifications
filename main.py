@@ -30,6 +30,7 @@ import logging
 from config import valid_url_list, TOKEN
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.error import Forbidden, BadRequest, NetworkError
 
 # Enable logging
 logging.basicConfig(
@@ -61,19 +62,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Echo the user message."""
     await update.message.reply_text(update.message.text)
-
-
-async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send the alarm message."""
-    bot = Bot(token=TOKEN)
-    url = 'https://www.fillaritori.com/forum/13-kiekot/'
-    response = requests.get(url)
-
-    if response.status_code == 200:
-        tree = html.fromstring(response.content)
-
-        items = tree.xpath('//div[@data-tableid="topics"]/ol/li[2]/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')
-        await bot.send_message(chat_id=91914942, text=items[0])
 
 
 async def add_search_command(update: Update, context):
@@ -246,7 +234,14 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             listing_content = await get_text_from_request(listing_response)
         if is_search_content_in_page(keyword, listing_content) and (price <= max_price or max_price == 0):
             logger.info(f"Sending message to {chat_id}")
-            await bot.send_message(chat_id=chat_id, text=listing_url)
+            try:
+                await bot.send_message(chat_id=chat_id, text=listing_url)
+            except Forbidden:
+                logger.info(f"User {chat_id} has blocked the bot. Skipping...")
+            except BadRequest as e:
+                logger.info(f"BadRequest error for {chat_id}: {e}")
+            except NetworkError:
+                logger.info("Network error, retrying later...")
     else:
         logger.info(f"Checked all listings on {url}, saving last ID to db")
         update_search(search_id, first_listing_id)
@@ -266,7 +261,7 @@ def main() -> None:
     application.add_handler(CommandHandler("list_searches", list_searches_command))
     application.add_handler(CommandHandler("delete_search", delete_search_command))
     application.add_handler(CommandHandler("help", help_command))
-    application.job_queue.run_repeating(run_checks_for_all_users, 10*60)
+    application.job_queue.run_repeating(run_checks_for_all_users, 1)
 
     # application.job_queue.run_repeating(run_checks_for_all_users, 5)
     # Run the bot until the user presses Ctrl-C
