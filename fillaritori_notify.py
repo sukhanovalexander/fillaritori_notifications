@@ -225,8 +225,13 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             logger.info("Met last known listing")
             update_search(search_id, first_listing_id)
             break
-        listing_url = tree.xpath(f'//div[@data-tableid="topics"]/ol/li[{num + 1}]/div[@class="ipsDataItem_main"]/h4'
-                                 f'/span[2]/a/@href')[0]
+        listing_url_list = tree.xpath(f'//div[@data-tableid="topics"]/ol/li[{num + 1}]/div[@class="ipsDataItem_main"]/h4'
+                                 f'/span[2]/a/@href')
+        if listing_url_list:
+            listing_url = listing_url_list[0]
+        else:
+            logger.info("Could not extract URL, skipping...")
+            break
         listing_response = await send_new_or_get_cached(listing_url)
         if listing_response.status_code == 200 and await is_listing_for_sale(listing_response):
             logger.info(f"Checking {num + 1} listing price")
