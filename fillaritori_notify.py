@@ -142,7 +142,12 @@ async def delete_search_command(update: Update, context):
 def get_last_match(url):
     response = requests.get(url)
     tree = html.fromstring(response.content)
-    item = tree.xpath('//div[@data-tableid="topics"]/ol/li[5]/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')[0]
+    items_list = tree.xpath('//div[@data-tableid="topics"]/ol/li[5]/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')
+    if items_list:
+        item = items_list[0]
+    else:
+        logger.info("Could not extract URL, skipping...")
+        return 0
     return get_id_from_url(item)
 
 
