@@ -75,6 +75,12 @@ async def add_search_command(update: Update, context):
 
     url, keyword, max_price = args[0], args[1], args[2]
 
+    if '.' in keyword and '-' in keyword:
+        await update.message.reply_text(
+            f"Usage: Do not use both AND(-) and OR(.) conditions in a single search\n")
+        return
+
+
     try:
         max_price = int(max_price)
     except ValueError:
@@ -186,9 +192,19 @@ def is_search_content_in_page_multiple_keywords(keyword, page_contents):
         return True
 
 
+def is_search_content_in_page_or_condition(keyword, page_contents):
+    for word in keyword.split("."):
+        if word.lower() in page_contents.lower():
+            return True
+    else:
+        return False
+
+
 def is_search_content_in_page(keyword, page_contents):
     if '-' in keyword:
         return is_search_content_in_page_multiple_keywords(keyword, page_contents)
+    if '.' in keyword:
+        return is_search_content_in_page_or_condition(keyword, page_contents)
     return keyword.lower() in page_contents.lower()
 
 
