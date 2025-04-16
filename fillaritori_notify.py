@@ -113,7 +113,7 @@ async def list_searches_command(update: Update, context):
     message = "Your saved searches:\n"
     for search in searches:
         search_id, url, keyword, max_price = search
-        message += f"ID: {search_id} | url: {url} | Keyword: {keyword} | Max Price: {max_price}\n"
+        message += f"ID: {search_id} | forum: {url.split('/')[-2]} | Keyword: {keyword} | Max Price: {max_price}\n"
 
     await update.message.reply_text(message)
 
