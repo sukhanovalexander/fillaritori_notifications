@@ -142,9 +142,9 @@ async def delete_search_command(update: Update, context):
 def get_last_match(url):
     response = requests.get(url)
     tree = html.fromstring(response.content)
-    items_list = tree.xpath('//div[@data-tableid="topics"]/ol/li[5]/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')
+    items_list = tree.xpath('//div[@data-tableid="topics"]/ol/li[5]/div[@class="ipsDataItem_main"]/h4/span[*]/a/@href')
     if items_list:
-        item = items_list[0]
+        item = items_list[-1]
     else:
         logger.info("Could not extract URL, skipping...")
         return 0
@@ -237,27 +237,38 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
     price = 0
     listing_content = ''
     tree = html.fromstring(response.content)
-    items = tree.xpath('//div[@data-tableid="topics"]/ol/li/div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')
+
+    items = []
+    list_items = tree.xpath('//div[@data-tableid="topics"]/ol/li')
+
+    for li in list_items:
+        link = li.xpath('.//div[@class="ipsDataItem_main"]/h4/span[2]/a/@href')
+        if not link:
+            link = li.xpath('.//div[@class="ipsDataItem_main"]/h4/span[1]/a/@href')
+        if link:
+            items.append(link[0])
+
+    if not items:
+        logger.info("No listings found, exiting...")
+        return
 
     first_listing_id = get_id_from_url(items[0])
-    for num, element in enumerate(items):
-        logger.info(f"Checking {num+1} listing on page")
-        if get_id_from_url(element) == last_match:
+
+    for num, listing_url in enumerate(items):
+        logger.info(f"Checking {num + 1} listing on page")
+
+        if get_id_from_url(listing_url) == last_match:
             logger.info("Met last known listing")
             update_search(search_id, first_listing_id)
             break
-        listing_url_list = tree.xpath(f'//div[@data-tableid="topics"]/ol/li[{num + 1}]/div[@class="ipsDataItem_main"]/h4'
-                                 f'/span[2]/a/@href')
-        if listing_url_list:
-            listing_url = listing_url_list[0]
-        else:
-            logger.info("Could not extract URL, skipping...")
-            break
+
         listing_response = await send_new_or_get_cached(listing_url)
+
         if listing_response.status_code == 200 and await is_listing_for_sale(listing_response):
             logger.info(f"Checking {num + 1} listing price")
             price = await get_price_from_request(listing_response)
             listing_content = await get_text_from_request(listing_response)
+
         if is_search_content_in_page(keyword, listing_content) and (price <= max_price or max_price == 0):
             logger.info(f"Sending message to {chat_id}")
             try:
