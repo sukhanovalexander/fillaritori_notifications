@@ -39,4 +39,4 @@ valid_url_list = ['https://www.fillaritori.com/forum/17-muut/',
                   'https://www.fillaritori.com/forum/44-elektroniikka/'
                   ]
 
-TOKEN = "7194463974:AAFHsByUOUbMaKGGMgy15trdspR0KPY9qsg"  # this token is revoked
+TOKEN = "7194463974:AAGy_emqEuuM8WAN0oVYxoay5HTVq3zCIog"  # this token is revoked
