@@ -189,6 +189,14 @@ async def get_text_from_request(response):
     return with_geotag.split(" Paikkakunta: ")[0]
 
 
+async def get_photo_from_request(response):
+    tree = html.fromstring(response.content)
+    img_url = tree.xpath("//strong[contains(text(), 'Price') or contains(text(), 'Hinta')]/../../p[*]/a/@href")
+    if len(img_url):
+        if img_url[0][:2] == '//':
+            img_url[0] = img_url[0][2:]
+    return img_url[0] if len(img_url) else 0
+
 def is_search_content_in_page_multiple_keywords(keyword, page_contents):
     for word in keyword.split("-"):
         if word.lower() not in page_contents.lower():
@@ -270,9 +278,15 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             listing_content = await get_text_from_request(listing_response)
 
         if is_search_content_in_page(keyword, listing_content) and (price <= max_price or max_price == 0):
+            logger.info(f"Trying to get attached image URL")
+            img_url = await get_photo_from_request(listing_response)
             logger.info(f"Sending message to {chat_id}")
             try:
-                await bot.send_message(chat_id=chat_id, text=f"{listing_url} search ID {search_id}")
+                if img_url:
+                    await bot.send_photo(chat_id=chat_id, photo=img_url,
+                                         caption=f"{listing_url} search ID {search_id}")
+                else:
+                    await bot.send_message(chat_id=chat_id, text=f"{listing_url} search ID {search_id}")
             except Forbidden:
                 logger.info(f"User {chat_id} has blocked the bot. Skipping...")
             except BadRequest as e:
