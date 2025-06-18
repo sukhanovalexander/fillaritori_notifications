@@ -295,6 +295,7 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             except BadRequest as e:
                 logger.info(f"BadRequest error for {chat_id}: {e}")
                 if "Wrong remote file identifier" in str(e):
+                    logger.info(f"Sending message to {chat_id} instead of media file")
                     await bot.send_message(chat_id=chat_id, text=f"{listing_url} search ID {search_id}")
 
             except NetworkError:
