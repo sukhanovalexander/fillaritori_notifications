@@ -194,6 +194,8 @@ async def get_photo_from_request(response):
     tree = html.fromstring(response.content)
     img_url = tree.xpath("//strong[contains(text(), 'Price') or contains(text(), 'Hinta')]/../../p[*]/a/@href")
     if len(img_url):
+        if img_url[0] == '/cdn-cgi/l/email-protection':
+            img_url = img_url[1:]
         if img_url[0][:2] == '//':
             img_url[0] = img_url[0][2:]
     return img_url[0] if len(img_url) else 0
