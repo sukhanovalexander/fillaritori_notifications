@@ -31,6 +31,7 @@ from config import valid_url_list, TOKEN
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram.error import Forbidden, BadRequest, NetworkError
+import urllib.parse
 
 # Enable logging
 logging.basicConfig(
@@ -282,8 +283,8 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
             img_url = await get_photo_from_request(listing_response)
             try:
                 if img_url:
-                    await bot.send_photo(chat_id=chat_id, photo=img_url,
-                                         caption=f"{listing_url} search ID {search_id}")
+                    await bot.send_photo(chat_id=chat_id, photo=img_url, parse_mode='Markdown',
+                                         caption=f"Price: {price} [{urllib.parse.unquote(listing_url.split('/')[-2])}]({listing_url}) search ID {search_id}")
                     logger.info(f"Sending media message to {chat_id}")
                 else:
                     await bot.send_message(chat_id=chat_id, text=f"{listing_url} search ID {search_id}")
@@ -313,7 +314,7 @@ def main() -> None:
     application.add_handler(CommandHandler("list_searches", list_searches_command))
     application.add_handler(CommandHandler("delete_search", delete_search_command))
     application.add_handler(CommandHandler("help", help_command))
-    application.job_queue.run_repeating(run_checks_for_all_users, 60)
+    application.job_queue.run_repeating(run_checks_for_all_users, 1)
 
     # application.job_queue.run_repeating(run_checks_for_all_users, 5)
     # Run the bot until the user presses Ctrl-C
