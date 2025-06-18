@@ -281,6 +281,7 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
         if is_search_content_in_page(keyword, listing_content) and (price <= max_price or max_price == 0):
             logger.info(f"Trying to get attached image URL")
             img_url = await get_photo_from_request(listing_response)
+            logger.info(f"Image URL {img_url}")
             try:
                 if img_url:
                     await bot.send_photo(chat_id=chat_id, photo=img_url, parse_mode='Markdown',
