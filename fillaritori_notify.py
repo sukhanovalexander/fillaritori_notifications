@@ -314,7 +314,7 @@ def main() -> None:
     application.add_handler(CommandHandler("list_searches", list_searches_command))
     application.add_handler(CommandHandler("delete_search", delete_search_command))
     application.add_handler(CommandHandler("help", help_command))
-    application.job_queue.run_repeating(run_checks_for_all_users, 1)
+    application.job_queue.run_repeating(run_checks_for_all_users, 60)
 
     # application.job_queue.run_repeating(run_checks_for_all_users, 5)
     # Run the bot until the user presses Ctrl-C
