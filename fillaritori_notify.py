@@ -294,6 +294,9 @@ async def check_new_ads_for_search(bot, search_id, chat_id, url, keyword, max_pr
                 logger.info(f"User {chat_id} has blocked the bot. Skipping...")
             except BadRequest as e:
                 logger.info(f"BadRequest error for {chat_id}: {e}")
+                if "Wrong remote file identifier" in str(e):
+                    await bot.send_message(chat_id=chat_id, text=f"{listing_url} search ID {search_id}")
+
             except NetworkError:
                 logger.info("Network error, retrying later...")
     else:
@@ -315,7 +318,7 @@ def main() -> None:
     application.add_handler(CommandHandler("list_searches", list_searches_command))
     application.add_handler(CommandHandler("delete_search", delete_search_command))
     application.add_handler(CommandHandler("help", help_command))
-    application.job_queue.run_repeating(run_checks_for_all_users, 60)
+    application.job_queue.run_repeating(run_checks_for_all_users, 1)
 
     # application.job_queue.run_repeating(run_checks_for_all_users, 5)
     # Run the bot until the user presses Ctrl-C
