@@ -196,6 +196,7 @@ async def get_photo_from_request(response):
     if len(img_url):
         if img_url[0] == '/cdn-cgi/l/email-protection':
             img_url = img_url[1:]
+    if len(img_url):
         if img_url[0][:2] == '//':
             img_url[0] = img_url[0][2:]
     return img_url[0] if len(img_url) else 0
